@@ -44,19 +44,12 @@ jobs:
         cp debug.keystore app/ 2>/dev/null || true
         cp debug.keystore app/certs/ 2>/dev/null || true
 
-    - name: Setup Gradle and Build APK
+    - name: Setup Gradle and Build APK with Plain Logs
       run: |
-        if [ -f gradlew ]; then
-          chmod +x gradlew
-          ./gradlew clean
-          ./gradlew assembleDebug --stacktrace
-        else
-          echo "Generating missing gradle wrapper..."
-          gradle wrapper
-          chmod +x gradlew
-          ./gradlew clean
-          ./gradlew assembleDebug --stacktrace
-        fi
+        chmod +x gradlew
+        ./gradlew clean
+        # --console=plain saare errors ko screen par open dump kar dega
+        ./gradlew assembleDebug --stacktrace --console=plain
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
