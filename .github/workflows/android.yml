@@ -28,9 +28,19 @@ jobs:
         mv "$PROJECT_DIR"/* . 2>/dev/null || true
         mv "$PROJECT_DIR"/[._]* . 2>/dev/null || true
 
+    - name: Handle Missing Environment Files
+      run: |
+        # Agar .env.example missing hai toh khud se dummy file create karo taake build crash na ho
+        if [ ! -f .env.example ]; then
+          echo "Creating missing .env.example file..."
+          touch .env.example
+        fi
+        if [ ! -f .env ]; then
+          touch .env
+        fi
+
     - name: Setup Gradle and Build APK
       run: |
-        # Agar gradlew file pehle se maujood hai toh usko permission do, nahi toh khud generate karo
         if [ -f gradlew ]; then
           chmod +x gradlew
           ./gradlew assembleDebug
