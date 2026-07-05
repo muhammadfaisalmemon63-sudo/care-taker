@@ -16,19 +16,30 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Smart Unzip and Locate Project
+    - name: Unzip and Setup Project
       run: |
         unzip -o care-taker.zip -d extracted_project
-        # Yeh command khud gradlew file ko dhoond nikalegi
+        # Agar koi folder andar hai toh uski files baahir le aao
         GRADLEW_PATH=$(find extracted_project -name gradlew)
-        echo "Found gradlew at: $GRADLEW_PATH"
-        PROJECT_DIR=$(dirname "$GRADLEW_PATH")
-        # Saari files ko baahir main screen par shift karna
-        mv "$PROJECT_DIR"/* . 2>/dev/null || true
-        mv "$PROJECT_DIR"/.* . 2>/dev/null || true
+        if [ ! -z "$GRADLEW_PATH" ]; then
+          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+          mv "$PROJECT_DIR"/* . 2>/dev/null || true
+          mv "$PROJECT_DIR"/.* . 2>/dev/null || true
+        else
+          # Agar gradlew bilkul nahi mila, toh extracted files ko root par move karo
+          cd extracted_project/* 2>/dev/null || cd extracted_project
+          mv * ../../ 2>/dev/null || true
+          cd ../..
+        fi
 
-    - name: Grant permissions
-      run: chmod +x gradlew
+    - name: Force Gradle Wrapper Setup
+      run: |
+        # Agar gradlew abhi bhi missing hai, toh khud naya create karo taake error na aaye
+        if [ ! -f gradlew ]; then
+          echo "Gradlew not found in zip, generating a new one..."
+          gradle wrapper
+        fi
+        chmod +x gradlew
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
