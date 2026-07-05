@@ -13,10 +13,31 @@ jobs:
       with:
         distribution: 'zulu'
         java-version: '17'
-    - run: chmod +x gradlew
-    - run: ./gradlew assembleDebug
-    - uses: actions/upload-artifact@v4
+        
+    - name: Find and Move Project Files
+      run: |
+        # Agar saari files kisi andar wale folder me hain, toh unhe baahir le aao
+        if [ ! -f gradlew ]; then
+          echo "Finding gradlew in subdirectories..."
+          SUBDIR=$(find . -maxdepth 2 -name gradlew -exec dirname {} \;)
+          if [ ! -z "$SUBDIR" ] && [ "$SUBDIR" != "." ]; then
+            echo "Moving files from $SUBDIR to root..."
+            mv $SUBDIR/* . 2>/dev/null || true
+            mv $SUBDIR/.* . 2>/dev/null || true
+          fi
+        fi
+
+    - name: Grant permissions
+      run: chmod +x gradlew
+
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
         path: "**/build/outputs/apk/debug/*.apk"
+        
+  
         
