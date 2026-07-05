@@ -30,13 +30,20 @@ jobs:
 
     - name: Handle Missing Environment Files
       run: |
-        # Agar .env.example missing hai toh khud se dummy file create karo taake build crash na ho
         if [ ! -f .env.example ]; then
           echo "Creating missing .env.example file..."
           touch .env.example
         fi
         if [ ! -f .env ]; then
           touch .env
+        fi
+
+    - name: Generate Debug Keystore
+      run: |
+        # Agar debug.keystore missing hai toh standard Android debug key khud generate karo
+        if [ ! -f debug.keystore ]; then
+          echo "Generating missing debug.keystore..."
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
         fi
 
     - name: Setup Gradle and Build APK
