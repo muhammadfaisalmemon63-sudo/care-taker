@@ -19,32 +19,32 @@ jobs:
     - name: Unzip and Fix Paths
       run: |
         unzip -o care-taker.zip -d extracted_project
-        # Asal project folder dhoondna jahan settings file hai
         SETTINGS_PATH=$(find extracted_project -name "settings.gradle*" | head -n 1)
         PROJECT_DIR=$(dirname "$SETTINGS_PATH")
         echo "Project directory found at: $PROJECT_DIR"
         
-        # Saari files ko main screen (root) par shift karna
         mv "$PROJECT_DIR"/* . 2>/dev/null || true
         mv "$PROJECT_DIR"/[._]* . 2>/dev/null || true
 
     - name: Handle Missing Environment Files
       run: |
         if [ ! -f .env.example ]; then
-          echo "Creating missing .env.example file..."
           touch .env.example
         fi
         if [ ! -f .env ]; then
           touch .env
         fi
 
-    - name: Generate Debug Keystore
+    - name: Generate and Copy Debug Keystore Everywhere
       run: |
-        # Agar debug.keystore missing hai toh standard Android debug key khud generate karo
+        # 1. Root me generate karo
         if [ ! -f debug.keystore ]; then
-          echo "Generating missing debug.keystore..."
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
         fi
+        # 2. Har mumkina folder me copy karo taake compiler ko kahin bhi masla na ho
+        mkdir -p app/certs
+        cp debug.keystore app/ 2>/dev/null || true
+        cp debug.keystore app/certs/ 2>/dev/null || true
 
     - name: Setup Gradle and Build APK
       run: |
