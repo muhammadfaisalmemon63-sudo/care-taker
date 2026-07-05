@@ -16,14 +16,16 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Unzip care-taker.zip
+    - name: Smart Unzip and Locate Project
       run: |
-        sudo apt-get install unzip
         unzip -o care-taker.zip -d extracted_project
-        # Files ko root directory me le kar aana
-        cd extracted_project/* 2>/dev/null || cd extracted_project
-        mv * ../../ 2>/dev/null || true
-        cd ../..
+        # Yeh command khud gradlew file ko dhoond nikalegi
+        GRADLEW_PATH=$(find extracted_project -name gradlew)
+        echo "Found gradlew at: $GRADLEW_PATH"
+        PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+        # Saari files ko baahir main screen par shift karna
+        mv "$PROJECT_DIR"/* . 2>/dev/null || true
+        mv "$PROJECT_DIR"/.* . 2>/dev/null || true
 
     - name: Grant permissions
       run: chmod +x gradlew
