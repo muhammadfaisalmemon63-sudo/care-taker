@@ -46,9 +46,13 @@ jobs:
 
     - name: Setup Gradle and Build APK with Plain Logs
       run: |
+        # Agar gradlew nahi hai toh pehle generate karo, phir plain logs ke sath build karo
+        if [ ! -f gradlew ]; then
+          echo "Generating missing gradle wrapper..."
+          gradle wrapper
+        fi
         chmod +x gradlew
         ./gradlew clean
-        # --console=plain saare errors ko screen par open dump kar dega
         ./gradlew assembleDebug --stacktrace --console=plain
 
     - name: Upload APK
