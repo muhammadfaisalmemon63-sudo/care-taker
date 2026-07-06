@@ -44,16 +44,23 @@ jobs:
         cp debug.keystore app/ 2>/dev/null || true
         cp debug.keystore app/certs/ 2>/dev/null || true
 
-    - name: Setup Gradle and Build APK with Plain Logs
+    - name: Setup Gradle and Build APK with Auto Diagnostic
       run: |
-        # Agar gradlew nahi hai toh pehle generate karo, phir plain logs ke sath build karo
         if [ ! -f gradlew ]; then
           echo "Generating missing gradle wrapper..."
           gradle wrapper
         fi
         chmod +x gradlew
         ./gradlew clean
-        ./gradlew assembleDebug --stacktrace --console=plain
+        
+        # Build chalayein, agar fail ho toh aakhri 100 lines khud print karein
+        ./gradlew assembleDebug --stacktrace --console=plain --no-daemon || {
+          echo "========================================="
+          echo "BUILD FAILED! PRINTING RECENT ERROR LOGS:"
+          echo "========================================="
+          ./gradlew assembleDebug --console=plain --no-daemon -q 2>&1 | tail -n 100
+          exit 1
+        }
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
