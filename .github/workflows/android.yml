@@ -44,7 +44,7 @@ jobs:
         cp debug.keystore app/ 2>/dev/null || true
         cp debug.keystore app/certs/ 2>/dev/null || true
 
-    - name: Force Build APK and Ignore Lint Errors
+    - name: Force Build and Catch Real Error Line
       run: |
         if [ ! -f gradlew ]; then
           gradle wrapper
@@ -52,11 +52,19 @@ jobs:
         chmod +x gradlew
         ./gradlew clean
         
-        # -x lint aur -x test saari strict checkings ko bypass kar dega
-        ./gradlew assembleDebug -x lint -x test --stacktrace --console=plain
+        # Build ko chalayein aur uska saara text ek file me save karein
+        ./gradlew assembleDebug -x lint -x test --console=plain > build_output.txt 2>&1 || {
+          echo "=================================================="
+          echo "❌ BUILD FAILED! SHOWING THE EXACT CODING ERROR:"
+          echo "=================================================="
+          # Yeh command sirf un lines ko dikahegi jahan 'error' ya 'e:' (Kotlin compiler error) likha hoga
+          grep -i -E "error:|e: |unresolved reference|failed" build_output.txt | tail -n 30
+          exit 1
+        }
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
         path: "**/build/outputs/apk/debug/*.apk"
+        
