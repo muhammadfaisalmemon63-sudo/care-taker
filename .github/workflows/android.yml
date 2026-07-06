@@ -32,15 +32,16 @@ jobs:
         echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" >> local.properties
         echo "GEMINI_API_KEY=$SECURE_GEMINI_KEY" >> gradle.properties
 
-    - name: Clean and Build Bundle
+    - name: Clean and Build with Error Stacktrace
       run: |
         if [ ! -f gradlew ]; then
           gradle wrapper
         fi
         chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon
-
+        ./gradlew assembleDebug --stacktrace --info --no-daemon
+        
     - name: Upload APK Artifact
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
