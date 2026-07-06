@@ -16,42 +16,29 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Unzip and Fix Paths
+    - name: Unzip Project Files
       run: |
         unzip -o care-taker.zip -d extracted_project
         SETTINGS_PATH=$(find extracted_project -name "settings.gradle*" | head -n 1)
         PROJECT_DIR=$(dirname "$SETTINGS_PATH")
-        
         mv "$PROJECT_DIR"/* . 2>/dev/null || true
         mv "$PROJECT_DIR"/[._]* . 2>/dev/null || true
 
-    - name: Setup Build Environment with GitHub Secret
+    - name: Inject Configuration Safely
       env:
         SECURE_GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
-        if [ ! -f .env.example ]; then touch .env.example; fi
-        if [ ! -f .env ]; then touch .env; fi
         echo "sdk.dir=$ANDROID_HOME" > local.properties
         echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" >> local.properties
         echo "GEMINI_API_KEY=$SECURE_GEMINI_KEY" >> gradle.properties
 
-    - name: Generate and Copy Debug Keystore
-      run: |
-        if [ ! -f debug.keystore ]; then
-          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-        fi
-        mkdir -p app/certs
-        cp debug.keystore app/ 2>/dev/null || true
-        cp debug.keystore app/certs/ 2>/dev/null || true
-
-    - name: Build Secure Authentic APK
+    - name: Clean and Build Bundle
       run: |
         if [ ! -f gradlew ]; then
           gradle wrapper
         fi
         chmod +x gradlew
-        ./gradlew clean
-        ./gradlew assembleDebug --stacktrace
+        ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
