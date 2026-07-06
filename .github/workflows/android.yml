@@ -36,22 +36,14 @@ jobs:
         echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" >> local.properties
         echo "GEMINI_API_KEY=$SECURE_GEMINI_KEY" >> gradle.properties
 
-    - name: Build Secure APK
+    - name: Build Secure APK Directly
       run: |
         if [ ! -f gradlew ]; then
           gradle wrapper
         fi
         chmod +x gradlew
-        # Hum logs ko file mein save kar rahe hain taake galti pakdi ja sakay
-        ./gradlew assembleDebug --no-daemon > build_output.log 2>&1 || BUILD_FAILED=true
-        
-        if [ "$BUILD_FAILED" = true ]; then
-          echo "=================== ASAL ERROR YAHAN HAI ==================="
-          # Log file ke aakhri 100 lines print karega jahan galti hoti hai
-          tail -n 100 build_output.log
-          echo "============================================================"
-          exit 1
-        fi
+        # Bina kisi file mein chhupaye direct run karenge taake error samne dikhe
+        ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
