@@ -21,19 +21,21 @@ jobs:
         unzip -o care-taker.zip -d extracted_project
         SETTINGS_PATH=$(find extracted_project -name "settings.gradle*" | head -n 1)
         PROJECT_DIR=$(dirname "$SETTINGS_PATH")
-        echo "Project directory found at: $PROJECT_DIR"
         
         mv "$PROJECT_DIR"/* . 2>/dev/null || true
         mv "$PROJECT_DIR"/[._]* . 2>/dev/null || true
 
-    - name: Handle Missing Environment Files
+    - name: Handle Missing Environment and API Keys
       run: |
-        if [ ! -f .env.example ]; then
-          touch .env.example
-        fi
-        if [ ! -f .env ]; then
-          touch .env
-        fi
+        if [ ! -f .env.example ]; then touch .env.example; fi
+        if [ ! -f .env ]; then touch .env; fi
+        
+        # local.properties ka masla hal karna
+        echo "sdk.dir=$ANDROID_HOME" > local.properties
+        
+        # AGAR code me GEMINI_API_KEY missing hai, toh BuildConfig ya gradle properties me dummy insert karna
+        echo "GEMINI_API_KEY=\"dummy_key_value\"" >> local.properties
+        echo "GEMINI_API_KEY=dummy_key_value" >> gradle.properties
 
     - name: Generate and Copy Debug Keystore Everywhere
       run: |
@@ -44,7 +46,7 @@ jobs:
         cp debug.keystore app/ 2>/dev/null || true
         cp debug.keystore app/certs/ 2>/dev/null || true
 
-    - name: Force Build and Catch Real Error Line
+    - name: Force Build APK Without Errors
       run: |
         if [ ! -f gradlew ]; then
           gradle wrapper
@@ -52,18 +54,12 @@ jobs:
         chmod +x gradlew
         ./gradlew clean
         
-        # Build ko chalayein aur uska saara text ek file me save karein
-        ./gradlew assembleDebug -x lint -x test --console=plain > build_output.txt 2>&1 || {
-          echo "=================================================="
-          echo "❌ BUILD FAILED! SHOWING THE EXACT CODING ERROR:"
-          echo "=================================================="
-          # Yeh command sirf un lines ko dikahegi jahan 'error' ya 'e:' (Kotlin compiler error) likha hoga
-          grep -i -E "error:|e: |unresolved reference|failed" build_output.txt | tail -n 30
-          exit 1
-        }
+        # Strict checking bypass karke seedha APK generate karna
+        ./gradlew assembleDebug -x lint -x test -PBUILD_CONF_GEMINI_API_KEY="dummy" --stacktrace --console=plain
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
         path: "**/build/outputs/apk/debug/*.apk"
+        
