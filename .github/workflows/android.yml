@@ -25,19 +25,17 @@ jobs:
         mv "$PROJECT_DIR"/* . 2>/dev/null || true
         mv "$PROJECT_DIR"/[._]* . 2>/dev/null || true
 
-    - name: Force Inject Dummy Keys
+    - name: Setup Build Environment with GitHub Secret
+      env:
+        SECURE_GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
         if [ ! -f .env.example ]; then touch .env.example; fi
         if [ ! -f .env ]; then touch .env; fi
         echo "sdk.dir=$ANDROID_HOME" > local.properties
-        echo "GEMINI_API_KEY=\"dummy_key_value\"" >> local.properties
-        echo "GEMINI_API_KEY=dummy_key_value" >> gradle.properties
-        
-        # Pure code me har tarah ke common naming patterns ko dummy value se overwrite karna
-        find . -type f \( -name "*.kt" -o -name "*.java" \) -exec sed -i 's/BuildConfig.GEMINI_API_KEY/"dummy"/g' {} + 2>/dev/null || true
-        find . -type f \( -name "*.kt" -o -name "*.java" \) -exec sed -i 's/GEMINI_API_KEY/"dummy"/g' {} + 2>/dev/null || true
+        echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" >> local.properties
+        echo "GEMINI_API_KEY=$SECURE_GEMINI_KEY" >> gradle.properties
 
-    - name: Generate and Copy Debug Keystore Everywhere
+    - name: Generate and Copy Debug Keystore
       run: |
         if [ ! -f debug.keystore ]; then
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
@@ -46,18 +44,16 @@ jobs:
         cp debug.keystore app/ 2>/dev/null || true
         cp debug.keystore app/certs/ 2>/dev/null || true
 
-    - name: Force APK Generation Ignoring Compilation Errors
+    - name: Build Secure Authentic APK
       run: |
         if [ ! -f gradlew ]; then
           gradle wrapper
         fi
         chmod +x gradlew
         ./gradlew clean
-        
-        # Compilation aur checks ke errors ko bypass karke har haal me APK assemble karna
-        ./gradlew assembleDebug -x lint -x test -Pkotlin.options.suppressWarnings=true --continue || true
+        ./gradlew assembleDebug --stacktrace
 
-    - name: Check and Upload APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
