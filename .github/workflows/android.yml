@@ -20,6 +20,12 @@ jobs:
       run: |
         rm -rf extracted_project
         unzip -o care-taker.zip -d extracted_project
+        
+        # Auto Name Changer: Yeh command pure project mein se Shamrez ka naam dhoond kar remove kar degi
+        find extracted_project -type f -name "*.kt" -o -name "*.java" -o -name "*.xml" | xargs sed -i 's/Shamrez langah//g' || true
+        find extracted_project -type f -name "*.kt" -o -name "*.java" -o -name "*.xml" | xargs sed -i 's/shamrez langah//g' || true
+        find extracted_project -type f -name "*.kt" -o -name "*.java" -o -name "*.xml" | xargs sed -i 's/Shamrez Langah//g' || true
+
         SETTINGS_PATH=$(find extracted_project -name "settings.gradle*" | head -n 1)
         
         if [ -z "$SETTINGS_PATH" ]; then
@@ -33,7 +39,6 @@ jobs:
 
     - name: Create Safe Environment Files
       run: |
-        # Aapki API key direct script ke andar set kar di hai
         API_KEY_VALUE="AIzaSyAQ_Ab8RN6KCYv_fDyfZU5AOvDKFY7ZVwfG-8vbRFrpdOJcslSDDrA"
         
         echo "sdk.dir=$ANDROID_HOME" > local.properties
@@ -42,7 +47,6 @@ jobs:
         echo "GEMINI_API_KEY=\"$API_KEY_VALUE\"" > .env
         echo "GEMINI_API_KEY=\"$API_KEY_VALUE\"" > .env.example
         
-        # Keystore auto-generation setup
         mkdir -p ~/.android
         keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
         cp ~/.android/debug.keystore ./debug.keystore
