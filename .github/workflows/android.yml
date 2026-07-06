@@ -16,38 +16,39 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Unzip Project Files
+    - name: Clean Extract and Auto-Find Project
       run: |
+        rm -rf extracted_project
         unzip -o care-taker.zip -d extracted_project
         SETTINGS_PATH=$(find extracted_project -name "settings.gradle*" | head -n 1)
-        PROJECT_DIR=$(dirname "$SETTINGS_PATH")
-        mv "$PROJECT_DIR"/* . 2>/dev/null || true
-        mv "$PROJECT_DIR"/[._]* . 2>/dev/null || true
+        
+        if [ -z "$SETTINGS_PATH" ]; then
+          echo "Settings.gradle nahi mili! Root par hi build check karte hain."
+        else
+          PROJECT_DIR=$(dirname "$SETTINGS_PATH")
+          echo "Project yahan mila: $PROJECT_DIR"
+          cp -r "$PROJECT_DIR"/* . 2>/dev/null || true
+          cp -r "$PROJECT_DIR"/.[!.]* . 2>/dev/null || true
+        fi
 
-    - name: Inject Configuration and Fix Missing Env Files
+    - name: Create Safe Environment Files
       env:
         SECURE_GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
-        touch .env.example
-        touch .env
-        echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" > .env.example
-        echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" > .env
         echo "sdk.dir=$ANDROID_HOME" > local.properties
         echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" >> local.properties
         echo "GEMINI_API_KEY=$SECURE_GEMINI_KEY" >> gradle.properties
+        echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" > .env
+        echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" > .env.example
 
-    - name: Build Secure APK Safely
+    - name: Clean Gradle and Force Build
       run: |
-        if [ ! -f gradlew ]; then
-          gradle wrapper
-        fi
+        gradle wrapper --gradle-version 8.5
         chmod +x gradlew
-        # Ab hum bina output block kiye normal run karenge kyunke code 100% sahi hai
-        ./gradlew assembleDebug --no-daemon
+        ./gradlew clean assembleDebug --no-daemon -x test -x lint
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
         path: "**/build/outputs/apk/debug/*.apk"
-        
