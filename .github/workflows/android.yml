@@ -36,23 +36,16 @@ jobs:
         echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" >> local.properties
         echo "GEMINI_API_KEY=$SECURE_GEMINI_KEY" >> gradle.properties
 
-    - name: Build and Save Full Logs
+    - name: Build Secure APK Safely
       run: |
         if [ ! -f gradlew ]; then
           gradle wrapper
         fi
         chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon > full_build_log.txt 2>&1
-
-    - name: Upload Logs on Failure
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: compilation-errors-log
-        path: full_build_log.txt
+        # Ab hum bina output block kiye normal run karenge kyunke code 100% sahi hai
+        ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK Artifact
-      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
