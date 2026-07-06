@@ -24,31 +24,28 @@ jobs:
         mv "$PROJECT_DIR"/* . 2>/dev/null || true
         mv "$PROJECT_DIR"/[._]* . 2>/dev/null || true
 
-    - name: Inject Configuration Safely
+    - name: Inject Configuration and Fix Missing Env Files
       env:
         SECURE_GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
+        # Missing env files ko manually create kar rahe hain jo build ko chahiye
+        touch .env.example
+        touch .env
+        echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" > .env.example
+        echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" > .env
+        
+        # Baki properties files
         echo "sdk.dir=$ANDROID_HOME" > local.properties
         echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" >> local.properties
         echo "GEMINI_API_KEY=$SECURE_GEMINI_KEY" >> gradle.properties
 
-    - name: Build and Auto-Extract Errors
+    - name: Build Secure APK
       run: |
         if [ ! -f gradlew ]; then
           gradle wrapper
         fi
         chmod +x gradlew
-        
-        # Build run karenge aur log ko save karenge
-        ./gradlew assembleDebug --no-daemon > build_log.txt 2>&1 || BUILD_FAILED=true
-        
-        if [ "$BUILD_FAILED" = true ]; then
-          echo "=================== ASAL ERROR YAHAN HAI ==================="
-          # Log mein se sirf kaam ki error lines nikal kar dikhayega
-          grep -i -A 5 -B 2 "error:" build_log.txt || tail -n 50 build_log.txt
-          echo "============================================================"
-          exit 1
-        fi
+        ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
