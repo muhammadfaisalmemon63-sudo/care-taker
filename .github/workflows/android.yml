@@ -41,9 +41,10 @@ jobs:
         echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" > .env
         echo "GEMINI_API_KEY=\"$SECURE_GEMINI_KEY\"" > .env.example
 
-    - name: Clean Gradle and Force Build
+    - name: Upgrade to Correct Gradle and Force Build
       run: |
-        gradle wrapper --gradle-version 8.5
+        # Plugin ki demand ke mutabiq exact 9.3.1 version de rahe hain
+        gradle wrapper --gradle-version 9.3.1
         chmod +x gradlew
         ./gradlew clean assembleDebug --no-daemon -x test -x lint
 
@@ -52,3 +53,4 @@ jobs:
       with:
         name: app-debug-apk
         path: "**/build/outputs/apk/debug/*.apk"
+        
